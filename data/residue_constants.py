@@ -123,6 +123,7 @@ chi_pi_periodic = [
 # is defined such that the dihedral-angle-defining atom (the last entry in
 # chi_angles_atoms above) is in the xy-plane (with a positive y-coordinate).
 # format: [atomname, group_idx, rel_position]
+# backbone atoms should be directly defined ?
 rigid_group_atom_positions = {
     'ALA': [
         ['N', 0, (-0.525, 1.363, 0.000)],
@@ -759,13 +760,15 @@ STANDARD_ATOM_MASK = _make_standard_atom_mask()
 
 # A one hot representation for the first and second atoms defining the axis
 # of rotation for each chi-angle in each residue.
+# EXTRACT atoms, convert them into one hot list
 def chi_angle_atom(atom_index: int) -> np.ndarray:
   """Define chi-angle rigid groups via one-hot representations."""
   chi_angles_index = {}
   one_hots = []
-
+  # k is residue name
   for k, v in chi_angles_atoms.items():
     indices = [atom_types.index(s[atom_index]) for s in v]
+    # needs 4 indices
     indices.extend([-1]*(4-len(indices)))
     chi_angles_index[k] = indices
 
@@ -780,6 +783,7 @@ def chi_angle_atom(atom_index: int) -> np.ndarray:
 
   return one_hot
 
+# the second atom, the third atom in dihedral angle
 chi_atom_1_one_hot = chi_angle_atom(1)
 chi_atom_2_one_hot = chi_angle_atom(2)
 

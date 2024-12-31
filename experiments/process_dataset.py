@@ -170,7 +170,7 @@ class PretrainedSequenceEmbedder(nn.Module):
             dataset, batch_size=self.max_batch_size, collate_fn=batch_converter, shuffle=False
         )
         print(f"Read sequence data with {len(dataset)} sequences")
-
+        # just use the model
         with torch.no_grad():
             for batch_idx, (labels, strs, toks) in enumerate(tqdm(data_loader, desc="Processing protein sequence batches")):
                 print(
@@ -200,12 +200,24 @@ def resid_unique(res):
     if type(res) == str:
         res_ = res.split()
         return f'{res_[1]}_{res_[2]}'
+    # res_id_chain_id chain, e.g. 45_A if we have Arg45 in chain A.
     return f'{res.id[1]}_{res.get_parent().id}'
 
 
 def get_seq(entity, lch):
+    """
+
+    Args:
+        entity: use PDB module to get_structure
+        lch: chain ??
+
+    Returns: aatype (residue names: ligand first + receptor), mask, chain id (lig + receptor)
+
+    """
     aatype_rec, aatype_lig = [], []
     chain_id_rec, chain_id_lig = [], []
+    # ligand sequence
+    # receptor sequence
     for res in entity.get_residues():
         res_name = residue_constants.substitute_non_standard_restype.get(res.resname, res.resname)
         try:
@@ -222,7 +234,9 @@ def get_seq(entity, lch):
             aatype_rec.append(res_shortname)
             chain_id_rec.append(res.parent.id)
     aatype_full = aatype_lig + aatype_rec
+    # this records chain id for every residue
     chain_id_full = chain_id_lig + chain_id_rec
+    # ligand and masked receptor?
     mask_full = np.concatenate([np.ones(len(chain_id_lig)), np.zeros(len(chain_id_rec))])
     assert len(aatype_full) == len(mask_full) == len(chain_id_full), "Shape mismatch when processing raw data!"
 
@@ -249,15 +263,18 @@ def get_motif_center_pos(infile:str, lig_chain:str, hotspot_cutoff=8, pocket_cut
 
     ligand_coords_ca = [i['CA'].coord for i in struct.get_residues() if i.parent.id == lig_chain]
     assert len(ligand_coords_ca) != 0, f"Specified ligand chain not found for {os.path.basename(infile)}"
+    # receptor residues
     rec_residues = [i for i in struct.get_residues() if i.parent.id != lig_chain]
+    # e.g. resid_unique: 45_A residue id = 45 in chain A.
     motif_lig_chain = [resid_unique(res) for res in struct.get_residues() if res.parent.id == lig_chain]
 
     hotspot_coords_ca = []
+    # build a binding pocket for ligand within cutoff
     for i in ligand_coords_ca:
         for k, j in enumerate(rec_residues):
             if np.linalg.norm(j['CA'].coord - i) <= hotspot_cutoff:
                 hotspot_coords_ca.append(j['CA'].coord)
-
+    # expand binding pocket by pocket cutoff
     for i in hotspot_coords_ca:
         for k, j in enumerate(rec_residues):
             if np.linalg.norm(j['CA'].coord - i) <= pocket_cutoff:
@@ -267,15 +284,15 @@ def get_motif_center_pos(infile:str, lig_chain:str, hotspot_cutoff=8, pocket_cut
     io = PDB.PDBIO()
     io.set_structure(struct)
     io.save(out_motif_file, select=resSelector(motif_lig_chain))
-
+    # all ca / number of ca
     center_pos = np.sum(np.array(ligand_coords_ca), axis=0) / len(ligand_coords_ca)
     struct = p.get_structure('', out_motif_file)[0]
 
     raw_seq_data = {}
     for i, chain_id in enumerate(chain_id_full):
         if chain_id not in raw_seq_data:
-            raw_seq_data[chain_id] = {"seq": "", "mask": []}
-        raw_seq_data[chain_id]["seq"] += seq_full[i]
+            raw_seq_data[chain_id] = {"seq": "", "mask": []} # seperated chains
+        raw_seq_data[chain_id]["seq"] += seq_full[i] # for every chain,
         raw_seq_data[chain_id]["mask"].append(mask_full[i])
 
     return struct, center_pos, raw_seq_data
@@ -303,6 +320,7 @@ def process_file(file_path:str, write_dir:str, lig_chain_str:str='A', hotspot_cu
     pdb_name = os.path.basename(file_path).replace('.pdb', '')
     metadata['pdb_name'] = pdb_name
     # lig_chain_str = pdb_name.split('_')[-2][0]
+    # set default chain name = 'A'
     lig_chain_str = 'A'
     lig_chain_str = lig_chain_str if lig_chain_str.isalpha() else 'A'
     processed_path = os.path.join(write_dir, f'{pdb_name}.pkl')
@@ -318,11 +336,14 @@ def process_file(file_path:str, write_dir:str, lig_chain_str:str='A', hotspot_cu
     # Extract all chains
     struct_chains = {}
     struct_chains[lig_chain_str.upper()] = structure[lig_chain_str]
+    # here check chain name, and update chain id (name) of ligand at least
+    # also add receptor chains
     for chain in structure.get_chains():
         if chain.id != lig_chain_str:
             struct_chains[chain.id.upper()] = chain
         
     com_center = center_pos
+    # here receptor chains included
     metadata['num_chains'] = len(struct_chains)
 
     # Extract features
