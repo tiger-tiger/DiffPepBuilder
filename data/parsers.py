@@ -35,8 +35,10 @@ def process_chain(chain: Chain, chain_id: str) -> Protein:
     chain_ids = []
     for res in chain:
         res_shortname = residue_constants.restype_3to1.get(res.resname, 'X')
+        # res idx in residue_constants.restype_order with a default index (20).
         restype_idx = residue_constants.restype_order.get(
             res_shortname, residue_constants.restype_num)
+        # initial pos and mask
         pos = np.zeros((residue_constants.atom_type_num, 3))
         mask = np.zeros((residue_constants.atom_type_num,))
         res_b_factors = np.zeros((residue_constants.atom_type_num,))
@@ -47,6 +49,7 @@ def process_chain(chain: Chain, chain_id: str) -> Protein:
             mask[residue_constants.atom_order[atom.name]] = 1.
             res_b_factors[residue_constants.atom_order[atom.name]
                           ] = atom.bfactor
+        # residue type index (for one hot)
         aatype.append(restype_idx)
         atom_positions.append(pos)
         atom_mask.append(mask)

@@ -20,6 +20,7 @@ import os
 from typing import Final, List, Mapping, Tuple
 
 import numpy as np
+# pip install dm-tree
 import tree
 
 # Internal import (35fd).
@@ -124,6 +125,9 @@ chi_pi_periodic = [
 # chi_angles_atoms above) is in the xy-plane (with a positive y-coordinate).
 # format: [atomname, group_idx, rel_position]
 # backbone atoms should be directly defined ?
+# phi: C, N, CALPHA, C
+# psi: N, Calpha, C, N
+# OMEGA: peptide bond, Calpha, C, N, Calpha
 rigid_group_atom_positions = {
     'ALA': [
         ['N', 0, (-0.525, 1.363, 0.000)],
@@ -381,7 +385,7 @@ van_der_waals_radius = {
     'O': 1.52,
     'S': 1.8,
 }
-
+# define a structure of Bond and BondAngle
 Bond = collections.namedtuple(
     'Bond', ['atom1_name', 'atom2_name', 'length', 'stddev'])
 BondAngle = collections.namedtuple(
@@ -404,6 +408,7 @@ def load_stereo_chemical_props() -> Tuple[Mapping[str, List[Bond]],
     residue_virtual_bonds: Dict that maps resname -> list of Bond tuples.
     residue_bond_angles: Dict that maps resname -> list of BondAngle tuples.
   """
+  # bond and angle data for amino acids
   stereo_chemical_props_path = os.path.join(
       os.path.dirname(os.path.abspath(__file__)), 'stereo_chemical_props.txt'
   )
@@ -421,7 +426,7 @@ def load_stereo_chemical_props() -> Tuple[Mapping[str, List[Bond]],
     if resname not in residue_bonds:
       residue_bonds[resname] = []
     residue_bonds[resname].append(
-        Bond(atom1, atom2, float(length), float(stddev)))
+        Bond(atom1, atom2, float(length), float(stddev))) # tuple
   residue_bonds['UNK'] = []
 
   # Load bond angles.
@@ -465,6 +470,9 @@ def load_stereo_chemical_props() -> Tuple[Mapping[str, List[Bond]],
                        - 2 * bond1.length * bond2.length * np.cos(gamma))
 
       # Propagation of uncertainty assuming uncorrelated errors.
+      # y = f(x1, x2, ,,,)
+      # uncertainty of y, u_y = sqrt( d(y)/dx1 * u_x1 ^2 + dy/dx2 * u_x2 ^2 + ... )
+      # dy/dbond1 = (2 * bond1 - 2 * bond2 * cos(gamma)) * 0.5 / length @jason
       dl_outer = 0.5 / length
       dl_dgamma = (2 * bond1.length * bond2.length * np.sin(gamma)) * dl_outer
       dl_db1 = (2 * bond1.length - 2 * bond2.length * np.cos(gamma)) * dl_outer
@@ -491,6 +499,7 @@ between_res_cos_angles_ca_c_n = [-0.4473, 0.0311]  # degrees: 116.568 +- 1.995
 
 # This mapping is used when we need to store atom data in a format that requires
 # fixed atom data size for every residue (e.g. a numpy array).
+# this limits residue types.
 atom_types = [
     'N', 'CA', 'C', 'CB', 'O', 'CG', 'CG1', 'CG2', 'OG', 'OG1', 'SG', 'CD',
     'CD1', 'CD2', 'ND1', 'ND2', 'OD1', 'OD2', 'SD', 'CE', 'CE1', 'CE2', 'CE3',
@@ -542,6 +551,7 @@ restype_order = {restype: i for i, restype in enumerate(restypes)}
 restype_num = len(restypes)  # := 20.
 unk_restype_index = restype_num  # Catch-all index for unknown restypes.
 
+# extend restypes with 'X'
 restypes_with_x = restypes + ['X']
 restype_order_with_x = {restype: i for i, restype in enumerate(restypes_with_x)}
 
@@ -575,7 +585,7 @@ def sequence_to_onehot(
                      'without any gaps. Got: %s' % sorted(mapping.values()))
 
   one_hot_arr = np.zeros((len(sequence), num_entries), dtype=np.int32)
-
+  # specify its index in restypes
   for aa_index, aa_type in enumerate(sequence):
     if map_unknown_to_x:
       if aa_type.isalpha() and aa_type.isupper():
@@ -650,7 +660,7 @@ restype_3to1 = {v: k for k, v in restype_1to3.items()}
 
 # Define a restype name for all unknown residues.
 unk_restype = 'UNK'
-
+# include 'UNK'
 resnames = [restype_1to3[r] for r in restypes] + [unk_restype]
 resname_to_idx = {resname: i for i, resname in enumerate(resnames)}
 
@@ -745,7 +755,7 @@ MAP_HHBLITS_AATYPE_TO_OUR_AATYPE = tuple(
 def _make_standard_atom_mask() -> np.ndarray:
   """Returns [num_res_types, num_atom_types] mask array."""
   # +1 to account for unknown (all 0s).
-  mask = np.zeros([restype_num + 1, atom_type_num], dtype=np.int32)
+  mask = np.zeros([restype_num + 1, atom_type_num], dtype=np.int32) # +1 means 'X'
   for restype, restype_letter in enumerate(restypes):
     restype_name = restype_1to3[restype_letter]
     atom_names = residue_atoms[restype_name]
@@ -761,24 +771,30 @@ STANDARD_ATOM_MASK = _make_standard_atom_mask()
 # A one hot representation for the first and second atoms defining the axis
 # of rotation for each chi-angle in each residue.
 # EXTRACT atoms, convert them into one hot list
+# this is a tool to extract atom of atom_index in chi_angles_atoms dict @jason
 def chi_angle_atom(atom_index: int) -> np.ndarray:
   """Define chi-angle rigid groups via one-hot representations."""
   chi_angles_index = {}
   one_hots = []
   # k is residue name
   for k, v in chi_angles_atoms.items():
+    # a residue, maybe one atom forms two dihedral angle or more, here a list, this is a bug @jason
+    # here for 'LYS', there are at most 4 dihedral angles.
+    # calculate max number of angles, MAX = max([len(chi_angles_atom[k]) for k in chi_angles_atoms)
     indices = [atom_types.index(s[atom_index]) for s in v]
     # needs 4 indices
     indices.extend([-1]*(4-len(indices)))
     chi_angles_index[k] = indices
-
+  # for every residue, generate one hot of atom of atom_index.
   for r in restypes:
     res3 = restype_1to3[r]
-    one_hot = np.eye(atom_type_num)[chi_angles_index[res3]]
+    one_hot = np.eye(atom_type_num)[chi_angles_index[res3]] # pick four one hot s
     one_hots.append(one_hot)
 
   one_hots.append(np.zeros([4, atom_type_num]))  # Add zeros for residue `X`.
+  # stacks residue atoms (by atom_index) one hots
   one_hot = np.stack(one_hots, axis=0)
+  # rearrange feature to position 1
   one_hot = np.transpose(one_hot, [0, 2, 1])
 
   return one_hot
@@ -789,8 +805,10 @@ chi_atom_2_one_hot = chi_angle_atom(2)
 
 # An array like chi_angles_atoms but using indices rather than names.
 chi_angles_atom_indices = [chi_angles_atoms[restype_1to3[r]] for r in restypes]
+# get atom index, keep the structure of list
 chi_angles_atom_indices = tree.map_structure(
     lambda atom_name: atom_order[atom_name], chi_angles_atom_indices)
+# same length of 4, [[],[],[],[]]
 chi_angles_atom_indices = np.array([
     chi_atoms + ([[0, 0, 0, 0]] * (4 - len(chi_atoms)))
     for chi_atoms in chi_angles_atom_indices])
@@ -810,8 +828,9 @@ def _make_rigid_transformation_4x4(ex, ey, translation):
   # Normalize ex.
   ex_normalized = ex / np.linalg.norm(ex)
 
-  # make ey perpendicular to ex
+  # make ey perpendicular to ex, y - y * cos (x, y), y - y dot x / norm (x), @jason
   ey_normalized = ey - np.dot(ey, ex_normalized) * ex_normalized
+  # normalize. ey_normalized should not be 0.
   ey_normalized /= np.linalg.norm(ey_normalized)
 
   # compute ez as cross product
@@ -824,7 +843,8 @@ def _make_rigid_transformation_4x4(ex, ey, translation):
 # create an array with (restype, atomtype) --> rigid_group_idx
 # and an array with (restype, atomtype, coord) for the atom positions
 # and compute affine transformation matrices (4,4) from one rigid group to the
-# previous group
+# previous group, len(atom_type) == 37
+# please check restype_name_to_atom14_names, why len(atoms) == 14, which converts residue to a fixed atom array @jason
 restype_atom37_to_rigid_group = np.zeros([21, 37], dtype=int)
 restype_atom37_mask = np.zeros([21, 37], dtype=np.float32)
 restype_atom37_rigid_group_positions = np.zeros([21, 37, 3], dtype=np.float32)

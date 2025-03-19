@@ -453,6 +453,7 @@ def load_stereo_chemical_props() -> Tuple[
       residue_bond_angles: dict that maps resname --> list of BondAngle tuples
     """
     # TODO: this file should be downloaded in a setup script
+    # under openfold/resources
     stereo_chemical_props = resources.read_text("openfold.resources", "stereo_chemical_props.txt")
 
     lines_iter = iter(stereo_chemical_props.splitlines())
@@ -1132,8 +1133,10 @@ restype_rigid_group_default_frame = np.zeros([21, 8, 4, 4], dtype=np.float32)
 
 def _make_rigid_group_constants():
     """Fill the arrays above."""
+    # loop over all residue types
     for restype, restype_letter in enumerate(restypes):
         resname = restype_1to3[restype_letter]
+        # every atom in every residue
         for atomname, group_idx, atom_position in rigid_group_atom_positions[
             resname
         ]:
@@ -1180,7 +1183,7 @@ def _make_rigid_group_constants():
         )
         restype_rigid_group_default_frame[restype, 3, :, :] = mat
 
-        # chi1-frame to backbone
+        # chi1-frame to backbone, N-CA-CB-CG
         if chi_angles_mask[restype][0]:
             base_atom_names = chi_angles_atoms[resname][0]
             base_atom_positions = [
@@ -1193,18 +1196,19 @@ def _make_rigid_group_constants():
             )
             restype_rigid_group_default_frame[restype, 4, :, :] = mat
 
-        # chi2-frame to chi1-frame
-        # chi3-frame to chi2-frame
+        # chi2-frame to chi1-frame, CA-CB-CG-CD
+        # chi3-frame to chi2-frame, CB-CG-CD-NE(ARG)
         # chi4-frame to chi3-frame
         # luckily all rotation axes for the next frame start at (0,0,0) of the
         # previous frame
         for chi_idx in range(1, 4):
             if chi_angles_mask[restype][chi_idx]:
-                axis_end_atom_name = chi_angles_atoms[resname][chi_idx][2]
+                axis_end_atom_name = chi_angles_atoms[resname][chi_idx][2] # the third atom
                 axis_end_atom_position = atom_positions[axis_end_atom_name]
+
                 mat = _make_rigid_transformation_4x4(
                     ex=axis_end_atom_position,
-                    ey=np.array([-1.0, 0.0, 0.0]),
+                    ey=np.array([-1.0, 0.0, 0.0]), #bug ey, if ex is parallel ey
                     translation=axis_end_atom_position,
                 )
                 restype_rigid_group_default_frame[
