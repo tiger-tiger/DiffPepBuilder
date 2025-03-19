@@ -452,6 +452,7 @@ def load_stereo_chemical_props() -> Tuple[Mapping[str, List[Bond]],
     for b in residue_bonds[resname]:
       bond_cache[make_bond_key(b.atom1_name, b.atom2_name)] = b
     residue_virtual_bonds[resname] = []
+    # virtual bonds between first atom and third atom in a bond angle.
     for ba in bond_angles:
       bond1 = bond_cache[make_bond_key(ba.atom1_name, ba.atom2_name)]
       bond2 = bond_cache[make_bond_key(ba.atom2_name, ba.atom3name)]
@@ -871,7 +872,7 @@ def _make_rigid_group_constants():
         translation=atom_positions['C'])
     restype_rigid_group_default_frame[restype, 3, :, :] = mat
 
-    # chi1-frame to backbone
+    # chi1-frame to backbone, N-CA-CB-CG
     if chi_angles_mask[restype][0]:
       base_atom_names = chi_angles_atoms[resname][0]
       base_atom_positions = [atom_positions[name] for name in base_atom_names]
@@ -881,7 +882,7 @@ def _make_rigid_group_constants():
           translation=base_atom_positions[2])
       restype_rigid_group_default_frame[restype, 4, :, :] = mat
 
-    # chi2-frame to chi1-frame
+    # chi2-frame to chi1-frame, CA-CB-CG-CD
     # chi3-frame to chi2-frame
     # chi4-frame to chi3-frame
     # luckily all rotation axes for the next frame start at (0,0,0) of the
