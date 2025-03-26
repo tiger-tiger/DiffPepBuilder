@@ -815,6 +815,7 @@ class Rotation:
             Returns:
                 A copy of the Rotation using the new device and dtype
         """
+        # check rotation matrix or quaternion
         if(self._rot_mats is not None):
             return Rotation(
                 rot_mats=self._rot_mats.to(device=device, dtype=dtype), 
@@ -881,7 +882,7 @@ class Rigid:
             requires_grad = rots.requires_grad
         else:
             raise ValueError("At least one input argument must be specified")
-
+        # default identity rot, 0 translation matrix @jason
         if(rots is None):
             rots = Rotation.identity(
                 batch_dims, dtype, device, requires_grad,
@@ -1001,7 +1002,7 @@ class Rigid:
         """
             Returns the shape of the shared dimensions of the rotation and
             the translation.
-            
+            @jason except the last dimension
             Returns:
                 The shape of the transformation
         """
@@ -1045,7 +1046,7 @@ class Rigid:
             shape [*, 6], where the final 6 columns represent the x, y, and
             z values of a quaternion of form (1, x, y, z) followed by a 3D
             translation.
-
+            (1,) x, y, z, + x, y, z @jason
             Args:
                 q_vec: The quaternion update vector.
             Returns:

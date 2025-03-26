@@ -857,7 +857,7 @@ def _make_rigid_group_constants():
 
     # pre-omega-frame to backbone (currently dummy identity matrix)
     restype_rigid_group_default_frame[restype, 1, :, :] = np.eye(4)
-
+    # phi, psi are lated to C_alpha
     # phi-frame to backbone
     mat = _make_rigid_transformation_4x4(
         ex=atom_positions['N'] - atom_positions['CA'],
@@ -912,7 +912,7 @@ def make_atom14_dists_bounds(overlap_tolerance=1.5,
     resname = restype_1to3[restype_letter]
     atom_list = restype_name_to_atom14_names[resname]
 
-    # create lower and upper bounds for clashes
+    # create lower and upper bounds for clashes, for every pair of atoms
     for atom1_idx, atom1_name in enumerate(atom_list):
       if not atom1_name:
         continue

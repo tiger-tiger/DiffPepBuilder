@@ -10,9 +10,12 @@ Rigid = ru.Rigid
 Rotation = ru.Rotation
 
 # Residue Constants from OpenFold/AlphaFold2.
+# 37: atom types, restype_atom37_rigid_group_positions = np.zeros([21, 37, 3], dtype=np.float32)
 IDEALIZED_POS37 = torch.tensor(residue_constants.restype_atom37_rigid_group_positions)
 IDEALIZED_POS37_MASK = torch.any(IDEALIZED_POS37, axis=-1)
+# 21,14,3
 IDEALIZED_POS = torch.tensor(residue_constants.restype_atom14_rigid_group_positions)
+# 21, 8, 4, 4
 DEFAULT_FRAMES = torch.tensor(residue_constants.restype_rigid_group_default_frame)
 ATOM_MASK = torch.tensor(residue_constants.restype_atom14_mask)
 GROUP_IDX = torch.tensor(residue_constants.restype_atom14_to_rigid_group)
