@@ -934,6 +934,7 @@ def make_atom14_dists_bounds(overlap_tolerance=1.5,
   residue_bonds, residue_virtual_bonds, _ = load_stereo_chemical_props()
   for restype, restype_letter in enumerate(restypes):
     resname = restype_1to3[restype_letter]
+    # fixed array of atoms
     atom_list = restype_name_to_atom14_names[resname]
 
     # create lower and upper bounds for clashes, for every pair of atoms
