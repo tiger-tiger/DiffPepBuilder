@@ -11,7 +11,8 @@ num2aa=[
 
 aa2num= {x:i for i,x in enumerate(num2aa)}
 
-# full sc atom representation (Nx14)
+# full sc atom representation (Nx14), 14 ATOM TYPES (not element)
+# heavy atoms and hydrogen atoms
 aa2long=[
     (" N  "," CA "," C  "," O  "," CB ",  None,  None,  None,  None,  None,  None,  None,  None,  None," H  "," HA ","1HB ","2HB ","3HB ",  None,  None,  None,  None,  None,  None,  None,  None), # ala
     (" N  "," CA "," C  "," O  "," CB "," CG "," CD "," NE "," CZ "," NH1"," NH2",  None,  None,  None," H  "," HA ","1HB ","2HB ","1HG ","2HG ","1HD ","2HD "," HE ","1HH1","2HH1","1HH2","2HH2"), # arg
@@ -62,7 +63,7 @@ aa2longalt=[
     (" N  "," CA "," C  "," O  "," CB ",  None,  None,  None,  None,  None,  None,  None,  None,  None," H  "," HA ","1HB ","2HB ","3HB ",  None,  None,  None,  None,  None,  None,  None,  None), # unk
     (" N  "," CA "," C  "," O  "," CB ",  None,  None,  None,  None,  None,  None,  None,  None,  None," H  "," HA ","1HB ","2HB ","3HB ",  None,  None,  None,  None,  None,  None,  None,  None), # mask
 ]
-
+# bond link
 aabonds=[
     ((" N  "," CA "),(" N  "," H  "),(" CA "," C  "),(" CA "," CB "),(" CA "," HA "),(" C  "," O  "),(" CB ","1HB "),(" CB ","2HB "),(" CB ","3HB ")) , # ala
     ((" N  "," CA "),(" N  "," H  "),(" CA "," C  "),(" CA "," CB "),(" CA "," HA "),(" C  "," O  "),(" CB "," CG "),(" CB ","1HB "),(" CB ","2HB "),(" CG "," CD "),(" CG ","1HG "),(" CG ","2HG "),(" CD "," NE "),(" CD ","1HD "),(" CD ","2HD "),(" NE "," CZ "),(" NE "," HE "),(" CZ "," NH1"),(" CZ "," NH2"),(" NH1","1HH1"),(" NH1","2HH1"),(" NH2","1HH2"),(" NH2","2HH2")) , # arg
@@ -116,7 +117,7 @@ aa2type = [
 # tip atom
 aa2tip = [
         " CB ", # ala
-        " CZ ", # arg
+        " CZ ", # arg ?? @jason
         " ND2", # asn
         " CG ", # asp
         " SG ", # cys
@@ -165,7 +166,7 @@ torsions=[
     [ None, None, None, None ],  # mask
 ]
 
-# ideal N, CA, C initial coordinates
+# ideal N, CA, C initial coordinates, @jason copy residue_constants.py
 init_N = torch.tensor([-0.5272, 1.3593, 0.000]).float()
 init_CA = torch.zeros_like(init_N)
 init_C = torch.tensor([1.5233, 0.000, 0.000]).float()
@@ -178,6 +179,7 @@ cos_ideal_NCAC = torch.sum(norm_N*norm_C, dim=-1) # cosine of ideal N-CA-C bond 
 
 #fd Rosetta ideal coords
 #fd   - uses same "frame-building" as AF2
+# quickly build ideal 3d structure @jason
 ideal_coords = [
     [ # 0 ala
         [' N  ', 0, (-0.5272, 1.3593, 0.000)],

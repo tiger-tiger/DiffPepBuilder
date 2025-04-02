@@ -43,6 +43,7 @@ def torsion_angles_to_frames(
     # [*, N, 8] transformations, i.e.
     #   One [*, N, 8, 3, 3] rotation matrix and
     #   One [*, N, 8, 3]    translation matrix
+    # in rigid_utils, build Rigid from default_4x4 (rotation, and translation)
     default_r = r.from_tensor_4x4(default_4x4)
 
     bb_rot = alpha.new_zeros((*((1,) * len(alpha.shape[:-1])), 2))
