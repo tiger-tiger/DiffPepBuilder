@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-
+# index of AA
 num2aa=[
     'ALA','ARG','ASN','ASP','CYS',
     'GLN','GLU','GLY','HIS','ILE',

@@ -30,7 +30,7 @@ CHAIN_TO_INT = {
 INT_TO_CHAIN = {
     i: chain_char for i, chain_char in enumerate(ALPHANUMERIC)
 }
-
+# chain features
 CHAIN_FEATS = [
     'atom_positions', 'aatype', 'atom_mask', 'residue_index', 'b_factors'
 ]
@@ -97,25 +97,30 @@ def parse_pdb(filename):
 
 def parse_pdb_lines(lines):
 
-    # indices of residues observed in the structure
-    idx_s = [int(l[22:26]) for l in lines if l[:4]=="ATOM" and l[12:16].strip()=="CA"]
+    # indices of residues observed in the structure, here needs "CA" to confine idx_s one idx  one residue
+    # no duplicate idx extracted
+    idx_s = [int(l[22:26]) for l in lines if l[:4] == "ATOM" and l[12:16].strip() == "CA"]
 
     # 4 BB + up to 10 SC atoms
     xyz = np.full((len(idx_s), 14, 3), np.nan, dtype=np.float32)
     seq = []
+    #
     for l in lines:
         if l[:4] != "ATOM":
             continue
         resNo, atom, aa = int(l[22:26]), l[12:16], l[17:20]
         seq.append(residue_constants.restype_3to1[aa])
         idx = idx_s.index(resNo)
+        # list its atoms
         for i_atm, tgtatm in enumerate(chemical.aa2long[chemical.aa2num[aa]]):
+            # residue idx (not residue id / name), atom idx (hard coded for every residue)
             if tgtatm == atom:
                 xyz[idx,i_atm,:] = [float(l[30:38]), float(l[38:46]), float(l[46:54])]
                 break
 
     # save atom mask
     mask = np.logical_not(np.isnan(xyz[...,0]))
+    # default to 0.0
     xyz[np.isnan(xyz[...,0])] = 0.0
 
     return xyz, mask, np.array(idx_s), ''.join(seq)
