@@ -21,7 +21,8 @@ from torch.utils import data
 import torch
 
 Protein = protein.Protein
-
+# omegaconf, YAML based hierarchical configuration system, supporting merging
+# configurations from multiple sources
 # Global map from chain characters to integers.
 ALPHANUMERIC = string.ascii_letters + string.digits + ' '
 CHAIN_TO_INT = {
