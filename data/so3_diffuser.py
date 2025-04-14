@@ -124,7 +124,7 @@ class SO3Diffuser:
 
     def __init__(self, so3_conf):
         self.schedule = so3_conf.schedule
-
+        # when <0.2, may use gaussian?
         self.min_sigma = so3_conf.min_sigma
         self.max_sigma = so3_conf.max_sigma
 
