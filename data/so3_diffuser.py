@@ -42,6 +42,7 @@ def igso3_expansion(omega, eps, L=1000, use_torch=False):
         omega = omega[..., None]  # [num_batch, 1]
     else:
         raise ValueError("Omega must be 1D or 2D.")
+    # here no normalization factor
     p = (2*ls + 1) * lib.exp(-ls*(ls+1)*eps**2/2) * lib.sin(omega*(ls+1/2)) / lib.sin(omega/2)
     if use_torch:
         return p.sum(dim=-1)
@@ -59,6 +60,8 @@ def density(expansion, omega, marginal=True):
         marginal: set true to give marginal density over the angle of rotation,
             otherwise include normalization to give density on SO(3) or a
             rotation with angle omega.
+
+        normalization
     """
     if marginal:
         # if marginal, density over [0, pi], else over SO(3)
