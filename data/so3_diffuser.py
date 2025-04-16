@@ -174,14 +174,14 @@ class SO3Diffuser:
                 [igso3_expansion(self.discrete_omega, sigma) for sigma in self.discrete_sigma])
             # Compute the pdf and cdf values for the marginal distribution of the angle
             # of rotation (which is needed for sampling)
-            # density for all omega
+            # density for all omega, here limit w to [0, pi]
             self._pdf  = np.asarray(
                 [density(x, self.discrete_omega, marginal=True) for x in exp_vals])
             self._cdf = np.asarray(
                 [pdf.cumsum() / so3_conf.num_omega * np.pi for pdf in self._pdf])
 
-            # Compute the norms of the scores.  This are used to scale the rotation axis when
-            # computing the score as a vector.
+            # Compute the norms of the scores.  These are used to scale the rotation axis when
+            # computing the score as a vector. score is only used for SO(3)
             self._score_norms = np.asarray(
                 [score(exp_vals[i], self.discrete_omega, x) for i, x in enumerate(self.discrete_sigma)])
 
