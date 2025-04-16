@@ -76,7 +76,8 @@ def score(exp, omega, eps, L=1000, use_torch=False):  # score of density over SO
     of the IGSO(3) density.
 
     This function is used within the Diffuser class to when computing the score
-    as an element of the tangent space of SO(3).
+    as an element of the tangent space of SO(3). here over SO(3), not marginal @jason,
+    check the density function
 
     This uses the quotient rule of calculus, and take the derivative of the
     log:
@@ -95,6 +96,16 @@ def score(exp, omega, eps, L=1000, use_torch=False):  # score of density over SO
     Returns:
         The d/d omega log IGSO3(omega; eps)/(1-cos(omega))
 
+        log (IGSO3 / (1 - cos w)) : log expansion(x) / dx
+
+    song explains this, p := exp(-pdf) / Z, d log p = d (-pdf) - d (logZ), the last item is 0
+    over SO(3), we only needs expansion funciton @jason
+
+    but for 0-PI, f(w) = (1- cosw) / pi sum (part1 * part2) = sum part1 * ( 2 * sin^2 (w/2)) * sin((l+1/2)*w) / sin(w/2)
+
+    = sum (part1 * 2 * sin(w/2) * sin((l+1/2) * w))
+
+
     """
 
     lib = torch if use_torch else np
@@ -108,10 +119,12 @@ def score(exp, omega, eps, L=1000, use_torch=False):  # score of density over SO
         raise ValueError("Omega must be 1D or 2D.")
     omega = omega[..., None]
     eps = eps[..., None]
+    # f(w) = (1 - cos w) / pi * sum( part1 * sin(w * (l + 1/2)) / sin(w/2))
     hi = lib.sin(omega * (ls + 1 / 2))
     dhi = (ls + 1 / 2) * lib.cos(omega * (ls + 1 / 2))
     lo = lib.sin(omega / 2)
     dlo = 1 / 2 * lib.cos(omega / 2)
+    # part1: (2 * ls + 1) * exp(-ls * (ls + 1) eps**2 ) but here eps**2/2
     dSigma = (2 * ls + 1) * lib.exp(-ls * (ls + 1) * eps**2/2) * (lo * dhi - hi * dlo) / lo ** 2
     if use_torch:
         dSigma = dSigma.sum(dim=-1)
@@ -161,6 +174,7 @@ class SO3Diffuser:
                 [igso3_expansion(self.discrete_omega, sigma) for sigma in self.discrete_sigma])
             # Compute the pdf and cdf values for the marginal distribution of the angle
             # of rotation (which is needed for sampling)
+            # density for all omega
             self._pdf  = np.asarray(
                 [density(x, self.discrete_omega, marginal=True) for x in exp_vals])
             self._cdf = np.asarray(
