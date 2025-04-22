@@ -177,6 +177,7 @@ class SO3Diffuser:
             # density for all omega, here limit w to [0, pi]
             self._pdf  = np.asarray(
                 [density(x, self.discrete_omega, marginal=True) for x in exp_vals])
+            # numerical integration. 1 - cos(w) / pi * f(w) * (pi/num_omega) @jason
             self._cdf = np.asarray(
                 [pdf.cumsum() / so3_conf.num_omega * np.pi for pdf in self._pdf])
 
