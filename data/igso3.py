@@ -51,6 +51,8 @@ def igso3_density_angle(omega, t, L=500):
 # grad_R log IGSO3(R; I_3, t)
 def igso3_score(R, t, L=500):
     omega = so3_utils.Omega(R)
+    # tangent space on the rotation manifold SO(3) at any base point R
+    # tangent space!!
     unit_vector = torch.einsum('...ij,...jk->...ik', R, so3_utils.log(R))/omega.unsqueeze(-1).unsqueeze(-2)
     return unit_vector * d_logf_d_omega(omega, t, L).unsqueeze(-1).unsqueeze(-2)
 
@@ -211,7 +213,8 @@ class IGSO3:
         else:
             d_logf_d_omega = self._d_logf_d_omega[t_idx[:, None], omega_idx]
 
-        # Unit vector in tangent space
+        # Unit vector in tangent space, tangent space:Qr= TrSO3, SKEW-SYMMETRIC TENSOR
+        # Tr belongs to so3, RQr here, log(R) converts to so3,
         direction = torch.einsum('...jk,...kl->...jl',
                 R, so3_utils.log(R)/(omega[..., None, None] + eps))
 
