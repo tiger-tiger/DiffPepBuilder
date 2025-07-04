@@ -52,7 +52,8 @@ def igso3_density_angle(omega, t, L=500):
 def igso3_score(R, t, L=500):
     omega = so3_utils.Omega(R)
     # tangent space on the rotation manifold SO(3) at any base point R
-    # tangent space!!
+    # tangent space!! is this right ??? or just wrong, check so3_diffuser, it just
+    # uses vec / omega
     unit_vector = torch.einsum('...ij,...jk->...ik', R, so3_utils.log(R))/omega.unsqueeze(-1).unsqueeze(-2)
     return unit_vector * d_logf_d_omega(omega, t, L).unsqueeze(-1).unsqueeze(-2)
 
