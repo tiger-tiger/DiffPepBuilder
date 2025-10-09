@@ -37,7 +37,7 @@ def empty_template_feats(n_res) -> FeatureDict:
         "template_all_atom_mask": np.zeros((0, n_res, 37)).astype(np.float32),
     }
 
-
+# basically template_featurizer is applied
 def make_template_features(
     input_sequence: str,
     hits: Sequence[Any],
