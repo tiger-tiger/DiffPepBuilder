@@ -30,7 +30,7 @@ def log(R): return hat(Log(R))
 # Exponential map from so(3) to SO(3), this is the matrix exponential
 def exp(A): return torch.linalg.matrix_exp(A)
 
-# Exponential map from R^3 to SO(3)
+# Exponential map from R^3 to SO(3) (R^3 -> so(3) -> SO(3)
 def Exp(A): return exp(hat(A))
 
 # Angle of rotation SO(3) to R^+, this is the norm in our chosen orthonormal basis
@@ -63,7 +63,9 @@ def tangent_gaussian_log_density(R, R_mean, var):
 def sample_uniform(N, M=1000):
     omega_grid = np.linspace(0, np.pi, M)
     cdf = np.cumsum(np.pi**-1 * (1-np.cos(omega_grid)), 0)/(M/np.pi)
+    # eval y(rand_x), based on cdf and omega_grid
     omegas = np.interp(np.random.rand(N), cdf, omega_grid)
+    # direction of axis
     axes = np.random.randn(N, 3)
     axes = omegas[..., None]* axes/np.linalg.norm(axes, axis=-1, keepdims=True)
     axes_ = axes.reshape([-1, 3])
