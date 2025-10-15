@@ -64,7 +64,7 @@ def make_template_features(
 
     return template_features
 
-
+# basic info from sequence
 def make_sequence_features(
     sequence: str, description: str, num_res: int
 ) -> FeatureDict:
@@ -86,7 +86,7 @@ def make_sequence_features(
     )
     return features
 
-
+# wrap/use make_sequence_features
 def make_mmcif_features(
     mmcif_object: mmcif_parsing.MmcifObject, chain_id: str
 ) -> FeatureDict:
@@ -129,7 +129,7 @@ def _aatype_to_str_sequence(aatype):
         for i in range(len(aatype))
     ])
 
-
+# same to mmcif, sequence and position etc
 def make_protein_features(
     protein_object: protein.Protein, 
     description: str,
@@ -173,6 +173,7 @@ def make_pdb_features(
     if(is_distillation):
         high_confidence = protein_object.b_factors > confidence_threshold
         high_confidence = np.any(high_confidence, axis=-1)
+        # hide atoms of low confidence
         for i, confident in enumerate(high_confidence):
             if(not confident):
                 pdb_feats["all_atom_mask"][i] = 0
