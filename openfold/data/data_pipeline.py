@@ -180,7 +180,7 @@ def make_pdb_features(
 
     return pdb_feats
 
-
+# basically, alignment, num_squence * res num, with del matrix
 def make_msa_features(
     msas: Sequence[Sequence[str]],
     deletion_matrices: Sequence[parsers.DeletionMatrix],
@@ -200,10 +200,12 @@ def make_msa_features(
         for sequence_index, sequence in enumerate(msa):
             if sequence in seen_sequences:
                 continue
+            # save unique seq
             seen_sequences.add(sequence)
             int_msa.append(
                 [residue_constants.HHBLITS_AA_TO_ID[res] for res in sequence]
             )
+            # seq's del mat
             deletion_matrix.append(deletion_matrices[msa_index][sequence_index])
 
     num_res = len(msas[0][0])
@@ -211,6 +213,7 @@ def make_msa_features(
     features = {}
     features["deletion_matrix_int"] = np.array(deletion_matrix, dtype=int)
     features["msa"] = np.array(int_msa, dtype=int)
+    # matrix of, num of sequence * res
     features["num_alignments"] = np.array(
         [num_alignments] * num_res, dtype=int
     )
